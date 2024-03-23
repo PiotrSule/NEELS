@@ -1,0 +1,42 @@
+#cdf
+pNEESL=function(x, a, b){
+  u=1+exp(-x); return(u^(-a)/(u^(-a)+1-u^(-b))) }
+#pdf
+dNEESL=function(x, a, b){
+  u=1+exp(-x)
+  return(exp(-x)*u^(-a-1)*(a+(b-a)*u^(-b))/(u^(-a)+1-u^(-b))^2) }
+#quantile
+qNEESL=function(p, a, b){
+  u1 = function(x, a, b) (1+exp(-x))^(-a)*(1-p)-p*(1-(1+exp(-x))^(-b))
+  return(uniroot(u1,  c(-1e06, 1e06),  tol = 0.0000000001,  a=a,  b=b)$root) }
+#mode in (x1, x2)
+modeNEESL=function (a, b, x1, x2){
+  res=optimize(function(x) dNEESL(x, a, b), interval=c(x1, x2),  maximum=1)$maximum
+  return(res) }
+#k-th order moment
+mNEESL=function(k, a, b) {
+  return(integral(function(x) x^k*dNEESL2(x, a, b),  -Inf,  Inf,  reltol = 1e-12,  method = "Simpson")) }
+#skewness
+g1NEESL=function(a, b){
+  w1=mNEESL(3, a, b)-3*mNEESL(1, a, b)*mNEESL(2, a, b)+2*mNEESL(1, a, b)^3
+  w2=mNEESL(2, a, b)-mNEESL(1, a, b)^2
+  return(w1/w2^(1.5)) }
+#excess kurtosis
+g2NEESL=function(a, b){
+  w1=mNEESL(4, a, b)-4*mNEESL(1, a, b)*mNEESL(3, a, b)+6*mNEESL(1, a, b)^2*
+    mNEESL(2, a, b)-3*mNEESL(1, a, b)^4
+  w2=mNEESL(2, a, b)-mNEESL(1, a, b)^2
+  return(w1/w2^2-3) }
+# pdf of order statistics
+dOSNEESL=function(x, i, n, a, b) {
+  u=1+exp(-x)
+  return(fact(n)/fact(i-1)/fact(n-i)*(u-1)*(a+(b-a)*u^(-b))*
+    (1-u^(-b))^(n-i)/(u^(a*i+1)*(u^(-a)-u^(-b)+1)^(n+1))) }
+# monents of order statistics
+mOSNEESL=function(k, i, n, a, b) {
+  return(integral(function(x) x^k*dOSNEESL(x, i, n, a, b),  -Inf,  Inf,  reltol = 1e-12,  method = "Simpson")) }
+#pseudo-random number generator 
+rNEESL =function(n, a, b) {
+  x=numeric(n)
+  for (i in 1:n) x[i]=qNEESL(runif(1, 0, 1), a, b)
+  return(sort(x)) }
